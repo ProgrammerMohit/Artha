@@ -1,22 +1,36 @@
 "use client";
-// @ts-nocheck
 
 import { useState, useEffect } from "react";
 
+interface ImportLog {
+  fileName: string;
+  totalFetched: number;
+  newJobs: number;
+  updatedJobs: number;
+  failedJobs: number;
+  timestamp: string;
+}
+
 export default function ImportHistoryPage() {
-  const [logs, setLogs] = useState([]);
+  const [logs, setLogs] = useState<ImportLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
+
+  const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
   // Fetch import logs from backend
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/import-logs`);
+      const res = await fetch(`${BASE_URL}/import-logs`);
       const data = await res.json();
       setLogs(data);
-    } catch (err) {
-      console.error("Error fetching logs:", err);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Error fetching logs:", err.message);
+      } else {
+        console.error("Error fetching logs:", String(err));
+      }
     } finally {
       setLoading(false);
     }
@@ -26,14 +40,16 @@ export default function ImportHistoryPage() {
   const runImport = async () => {
     try {
       setImporting(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/import`, {
-        method: "POST",
-      });
+      const res = await fetch(`${BASE_URL}/import`, { method: "POST" });
       const data = await res.json();
-      alert(data.message || "Import triggered");
+      alert(data.message || "Import triggered successfully");
       await fetchLogs(); // Refresh table after import
-    } catch (err) {
-      alert("Error running import: " + err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        alert("Error running import: " + err.message);
+      } else {
+        alert("Error running import: " + String(err));
+      }
     } finally {
       setImporting(false);
     }
@@ -47,9 +63,7 @@ export default function ImportHistoryPage() {
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-5xl mx-auto bg-white shadow-lg rounded-2xl p-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">
-            Import History
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-800">Import History</h1>
           <button
             onClick={runImport}
             disabled={importing}
@@ -72,7 +86,9 @@ export default function ImportHistoryPage() {
             <table className="w-full border border-gray-200 rounded-lg overflow-hidden">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="p-3 text-left text-sm font-semibold text-gray-700">File Name</th>
+                  <th className="p-3 text-left text-sm font-semibold text-gray-700">
+                    File Name
+                  </th>
                   <th className="p-3 text-sm text-gray-700">Total</th>
                   <th className="p-3 text-sm text-gray-700">New</th>
                   <th className="p-3 text-sm text-gray-700">Updated</th>
@@ -84,10 +100,18 @@ export default function ImportHistoryPage() {
                 {logs.map((log, i) => (
                   <tr key={i} className="border-b hover:bg-gray-50">
                     <td className="p-3 text-sm text-gray-800">{log.fileName}</td>
-                    <td className="p-3 text-center text-gray-800">{log.totalFetched}</td>
-                    <td className="p-3 text-center text-green-600 font-semibold">{log.newJobs}</td>
-                    <td className="p-3 text-center text-blue-600 font-semibold">{log.updatedJobs}</td>
-                    <td className="p-3 text-center text-red-600 font-semibold">{log.failedJobs}</td>
+                    <td className="p-3 text-center text-gray-800">
+                      {log.totalFetched}
+                    </td>
+                    <td className="p-3 text-center text-green-600 font-semibold">
+                      {log.newJobs}
+                    </td>
+                    <td className="p-3 text-center text-blue-600 font-semibold">
+                      {log.updatedJobs}
+                    </td>
+                    <td className="p-3 text-center text-red-600 font-semibold">
+                      {log.failedJobs}
+                    </td>
                     <td className="p-3 text-sm text-gray-600">
                       {new Date(log.timestamp).toLocaleString()}
                     </td>
